@@ -166,7 +166,8 @@
 
                     feedbackDiv.textContent = `Fout! Het juiste antwoord voor ${n1} ${this.currentOp} ${n2} was ${this.correctAnswer}`;
                     feedbackDiv.style.color = 'red';
-                    this.wrongFlashTimer = 60;
+                    // this.wrongFlashTimer = 60;
+                    this.wrongFlashTimer = 0;
                     answerInput.classList.add('shake');
                     setTimeout(() => answerInput.classList.remove('shake'), 500);
                     this.feedbackTimer = 480;
@@ -202,6 +203,8 @@
                 statsDiv.style.display = 'block';
                 feedbackDiv.style.display = 'block';
                 feedbackDiv.textContent = '';
+                this.userAnswer = '';
+                answerInput.value = '';
                 this.updateStats();
             }
 
