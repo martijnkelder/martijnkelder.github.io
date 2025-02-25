@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man Math Game with Enemies</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+        #game-container {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #question {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        #score {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="question"></div>
+        <div id="score">Score: 0</div>
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div id="feedback"></div>
+        <div id="pacmanCoordinates">-</div>
+        <div id="ghostsCoordinates">-</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const questionElement = document.getElementById('question');
+        const pacmanCoordinatesElement = document.getElementById('pacmanCoordinates');
+        const ghostsElement = document.getElementById('ghostsCoordinates');
+        const scoreElement = document.getElementById('score');
+        const feedbackDiv = document.getElementById('feedback');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 60;
+        const tileCount = canvas.width / gridSize;
+
+        let pacman;
+        let ghosts;
+        let dots;
+        let score;
+        let question;
+        let correctAnswer;
+        let gameOver;
+        let wrongAnswer;
+
+        function startGame() {
+          pacman = {
+              x: 1,
+              y: 1,
+              dx: 0,
+              dy: 0,
+              lastDx: 1,
+              lastDy: 0
+          };
+          dots = [];
+          ghosts = [
+              { x: tileCount - 2, y: 1, dx: 0, dy: 0, color: 'red' },
+              { x: tileCount - 2, y: tileCount - 2, dx: 0, dy: 0, color: 'pink' }
+          ];
+          score = 0;
+          question = '';
+          correctAnswer = 0;
+          gameOver = false;
+          wrongAnswer = false;
+          scoreElement.textContent = `Score: ${score}`;
+          generateMathQuestion();
+          update();
+        }
+
+        function generateMathQuestion() {
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            // const operations = ['+', '-', '*'];
+            const operations = ['*'];
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+
+            switch (operation) {
+                case '+':
+                    correctAnswer = num1 + num2;
+                    question = `${num1} + ${num2} = ?`;
+                    break;
+                case '-':
+                    correctAnswer = num1 - num2;
+                    question = `${num1} - ${num2} = ?`;
+                    break;
+                case '*':
+                    correctAnswer = num1 * num2;
+                    question = `${num1} * ${num2} = ?`;
+                    break;
+            }
+
+            questionElement.textContent = question;
+            placeDots();
+        }
+
+        function placeDots() {
+            dots = [];
+            const wrongAnswers = [];
+            while (wrongAnswers.length < 3) {
+                const wrong = correctAnswer + Math.floor(Math.random() * 10) - 5;
+                if (wrong !== correctAnswer && !wrongAnswers.includes(wrong)) {
+                    wrongAnswers.push(wrong);
+                }
+            }
+
+            const answers = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < 4; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * (tileCount - 2)) + 1;
+                    y = Math.floor(Math.random() * (tileCount - 2)) + 1;
+                } while (
+                    dots.some(dot => dot.x === x && dot.y === y) ||
+                    (x === pacman.x && y === pacman.y) ||
+                    ghosts.some(ghost => ghost.x === x && ghost.y === y)
+                );
+                dots.push({ x, y, value: answers[i] });
+            }
+        }
+
+        function moveGhosts() {
+            const coordinates = [];
+            ghosts.forEach(ghost => {
+                const direction = Math.floor(Math.random() * 8);
+                switch (direction) {
+                    case 0: ghost.dx = -1; ghost.dy = 0; break; // Left
+                    case 1: ghost.dx = 1; ghost.dy = 0; break;  // Right
+                    case 2: ghost.dx = 0; ghost.dy = -1; break; // Up
+                    case 3: ghost.dx = 0; ghost.dy = 1; break;  // Down
+                    default: // do not change direction
+
+                }
+
+                ghost.x += ghost.dx;
+                ghost.y += ghost.dy;
+
+                // Boundary check for ghosts
+                if (ghost.x < 0) ghost.x = 0;
+                if (ghost.x >= tileCount) ghost.x = tileCount - 1;
+                if (ghost.y < 0) ghost.y = 0;
+                if (ghost.y >= tileCount) ghost.y = tileCount - 1;
+
+                coordinates.push(`${ghost.x} / ${ghost.y} `)
+            });
+
+            ghostsElement.textContent = coordinates;
+        }
+
+        function draw() {
+            if (gameOver) {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+                feedbackDiv.textContent = '';
+                return;
+            }
+
+            // Clear canvas
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Draw Pac-Man
+
+            let startAngle, endAngle;
+            if (pacman.lastDy === -1 && pacman.lastDx === 0) { // Moving up
+              startAngle = 1.7 * Math.PI; // 306°
+              endAngle = 1.3 * Math.PI;   // 234°
+            } else if (pacman.lastDy === 1 && pacman.lastDx === 0) { // Moving down
+              startAngle = 0.7 * Math.PI; // 126°
+              endAngle = 0.3 * Math.PI;   // 54°
+            } else if (pacman.lastDx === -1) { // Moving left
+              startAngle = 1.2 * Math.PI; // 216°
+              endAngle = 0.8 * Math.PI;   // 144°
+            } else { // Moving right or stationary (default)
+              startAngle = 0.2 * Math.PI; // 36°
+              endAngle = 1.8 * Math.PI;   // 324°
+            }
+
+            ctx.beginPath();
+            ctx.arc(
+                pacman.x * gridSize + gridSize / 2,
+                pacman.y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                startAngle,
+                endAngle,
+                false
+            );
+            ctx.lineTo(pacman.x * gridSize + gridSize / 2, pacman.y * gridSize + gridSize / 2);
+            ctx.fillStyle = 'green';
+            ctx.fill();
+            ctx.closePath();
+
+            // Draw ghosts
+            ghosts.forEach(ghost => {
+                ctx.beginPath();
+                ctx.arc(
+                    ghost.x * gridSize + gridSize / 2,
+                    ghost.y * gridSize + gridSize / 2,
+                    gridSize / 2 - 2,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.fillStyle = ghost.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+
+            // Draw dots
+            dots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(
+                    dot.x * gridSize + gridSize / 2,
+                    dot.y * gridSize + gridSize / 2,
+                    gridSize / 2.5,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.closePath();
+
+                ctx.fillStyle = 'blue';
+                ctx.font = '14px Arial'; // Slightly larger font for readability
+                ctx.textAlign = 'center';
+                ctx.fillText(
+                    dot.value,
+                    dot.x * gridSize + gridSize / 2,
+                    dot.y * gridSize + gridSize / 2 + 5 // Adjusted vertical offset
+                );
+            });
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            pacman.x += pacman.dx;
+            pacman.y += pacman.dy;
+
+            // Boundary check for Pac-Man
+            if (pacman.x < 0) pacman.x = 0;
+            if (pacman.x >= tileCount) pacman.x = tileCount - 1;
+            if (pacman.y < 0) pacman.y = 0;
+            if (pacman.y >= tileCount) pacman.y = tileCount - 1;
+
+            if (pacman.dx !== 0) {
+                pacman.lastDx = pacman.dx;
+                pacman.lastDy = 0; // Reset vertical when moving horizontally
+            } else if (pacman.dy !== 0) {
+                pacman.lastDy = pacman.dy;
+                pacman.lastDx = 0; // Reset horizontal when moving vertically
+            }
+
+            // Check for ghost collision
+            if (ghosts.some(ghost => ghost.x === pacman.x && ghost.y === pacman.y)) {
+                gameOver = true;
+            }
+
+            // Check for dot collision
+            for (let i = dots.length - 1; i >= 0; i--) {
+                if (pacman.x === dots[i].x && pacman.y === dots[i].y) {
+
+                    if (dots[i].value === correctAnswer) {
+                        score += 10;
+                        scoreElement.textContent = `Score: ${score}`;
+                        feedbackDiv.textContent = 'Goed!';
+                        feedbackDiv.style.color = 'green';
+                    } else {
+                        wrongAnswer = true;
+                        feedbackDiv.textContent = `Fout! Het juiste antwoord voor vraag ${question} was ${correctAnswer}. Druk op een toets om verder te gaan!`;
+                        feedbackDiv.style.color = 'red';
+                        pacman.x = 1;
+                        pacman.y = 1;
+                        pacman.lastDx = 1;
+                        pacman.lastDy = 0;
+                    }
+                    generateMathQuestion();
+                    break;
+                }
+            }
+
+            pacmanCoordinatesElement.textContent = `${pacman.x} / ${pacman.y}`;
+
+            pacman.dx = 0;
+            pacman.dy = 0;
+
+            if (!wrongAnswer) {
+              draw();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (gameOver) {
+              if (e.key === 'Enter') {
+                startGame();
+              }
+
+              return
+            };
+
+            wrongAnswer = false;
+            switch (e.key) {
+                case 'ArrowUp': pacman.dy = -1; break;
+                case 'ArrowDown': pacman.dy = 1; break;
+                case 'ArrowLeft': pacman.dx = -1; break;
+                case 'ArrowRight': pacman.dx = 1; break;
+            }
+            update();
+        });
+
+        // Game loop for ghost movement
+        setInterval(() => {
+            if (!gameOver && !wrongAnswer) {
+                moveGhosts();
+                if (ghosts.some(ghost => ghost.x === pacman.x && ghost.y === pacman.y)) {
+                    gameOver = true;
+                }
+                draw();
+            }
+        }, 500); // Ghosts move every 500ms
+
+        // Start the game
+        startGame();
+    </script>
+</body>
+</html>

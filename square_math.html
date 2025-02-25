@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rectangle Math Game - Final</title>
+    <style>
+        #game-container {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: none;
+            display: block;
+            margin: 0 auto;
+        }
+        #stats, #feedback {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        #answerInput, #questionCountInput {
+            font-size: 24px;
+            margin: 10px auto;
+            display: block;
+            width: 200px; /* Fixed width for centering */
+            transition: transform 0.1s;
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        #startScreen, #endScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #endScreen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats">Goed: 0 | Fout: 0 | Vragen: 0/0</div>
+        <canvas id="gameCanvas" width="700" height="300"></canvas>
+        <div id="feedback"></div>
+        <input type="text" id="answerInput" placeholder="Geef hier je antwoord" style="display: none; width: 20ch; padding: 5px;">
+        <div id="startScreen">
+            <h2>Hoeveel vragen?</h2>
+            <input type="number" id="questionCountInput" min="1" value="10">
+            <button onclick="startGame()">Start</button>
+        </div>
+        <div id="endScreen">
+            <h2>Afgelopen!</h2>
+            <p id="finalScore"></p>
+            <button onclick="restartGame()">Opnieuw!</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const answerInput = document.getElementById('answerInput');
+        const feedbackDiv = document.getElementById('feedback');
+        const statsDiv = document.getElementById('stats');
+        const startScreen = document.getElementById('startScreen');
+        const endScreen = document.getElementById('endScreen');
+        const questionCountInput = document.getElementById('questionCountInput');
+        const finalScoreDiv = document.getElementById('finalScore');
+
+        class RectangleMathGame {
+            constructor() {
+                this.numbers = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9];
+                this.shuffleArray(this.numbers);
+                // this.operators = ['+', '-', '*', '/'];
+                this.operators = ['*'];
+                this.grid = this.createGrid();
+                this.correctCount = 0;
+                this.wrongCount = 0;
+                this.totalQuestions = 0;
+                this.currentQuestion = 0;
+                this.gameStarted = false;
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            createGrid() {
+                const grid = [];
+                const colors = [
+                    '#FFD1DC', '#B5EAD7', '#C7CEEA', '#FFF9B1', '#E2C1F5',
+                    '#FFD1DC', '#B5EAD7', '#C7CEEA', '#FFF9B1', '#E2C1F5',
+                    '#FFD1DC', '#B5EAD7', '#C7CEEA', '#FFF9B1', '#E2C1F5',
+                    '#FFD1DC', '#B5EAD7', '#C7CEEA', '#FFF9B1', '#E2C1F5', '#FFFFFF'
+                ];
+                this.shuffleArray(colors);
+                let numIndex = 0;
+                let colorIndex = 0;
+
+                for (let y = 0; y < 3; y++) {
+                    const row = [];
+                    for (let x = 0; x < 7; x++) {
+                        if (x === 3 && y === 1) {
+                            row.push({ type: 'operator', value: this.operators[Math.floor(Math.random() * this.operators.length)], color: colors[20] });
+                        } else {
+                            row.push({ type: 'number', value: this.numbers[numIndex++], color: colors[colorIndex++] });
+                        }
+                    }
+                    grid.push(row);
+                }
+                return grid;
+            }
+
+            getRandomPair() {
+                const positions = [];
+                for (let y = 0; y < 3; y++) {
+                    for (let x = 0; x < 7; x++) {
+                        if (!(x === 3 && y === 1)) positions.push([x, y]);
+                    }
+                }
+                const idx1 = Math.floor(Math.random() * positions.length);
+                let idx2 = Math.floor(Math.random() * positions.length);
+                while (idx2 === idx1) idx2 = Math.floor(Math.random() * positions.length);
+                return [positions[idx1], positions[idx2]];
+            }
+
+            calculateAnswer() {
+                const [pos1, pos2] = this.currentPair;
+                const n1 = this.grid[pos1[1]][pos1[0]].value;
+                const n2 = this.grid[pos2[1]][pos2[0]].value;
+                switch (this.currentOp) {
+                    case '+': return n1 + n2;
+                    case '-': return n1 - n2;
+                    case '*': return n1 * n2;
+                    case '/': return n2 !== 0 ? Math.round((n1 / n2) * 100) / 100 : 0;
+                }
+            }
+
+            checkAnswer() {
+                const answer = parseFloat(this.userAnswer);
+                if (answer === this.correctAnswer) {
+                    this.correctCount++;
+                    feedbackDiv.textContent = 'Goed!';
+                    feedbackDiv.style.color = 'green';
+
+                    this.wrongFlashTimer = 0;
+                    this.feedbackTimer = 120;
+                } else {
+                    this.wrongCount++;
+                    const [pos1, pos2] = this.currentPair;
+                    const n1 = this.grid[pos1[1]][pos1[0]].value;
+                    const n2 = this.grid[pos2[1]][pos2[0]].value;
+
+                    feedbackDiv.textContent = `Fout! Het juiste antwoord voor ${n1} ${this.currentOp} ${n2} was ${this.correctAnswer}`;
+                    feedbackDiv.style.color = 'red';
+                    // this.wrongFlashTimer = 60;
+                    this.wrongFlashTimer = 0;
+                    answerInput.classList.add('shake');
+                    setTimeout(() => answerInput.classList.remove('shake'), 500);
+                    this.feedbackTimer = 480;
+                }
+                this.currentQuestion++;
+                this.updateStats();
+
+                if (this.currentQuestion >= this.totalQuestions) {
+                    answerInput.style.display = 'none';
+                    return;
+                }
+
+                this.currentOp = this.operators[Math.floor(Math.random() * this.operators.length)];
+                this.grid[1][3].value = this.currentOp;
+                this.currentPair = this.getRandomPair();
+                this.correctAnswer = this.calculateAnswer();
+                this.userAnswer = '';
+                answerInput.value = '';
+            }
+
+            startGame(questionCount) {
+                this.totalQuestions = questionCount;
+                this.currentQuestion = 0;
+                this.correctCount = 0;
+                this.wrongCount = 0;
+                this.currentOp = this.operators[Math.floor(Math.random() * this.operators.length)];
+                this.grid[1][3].value = this.currentOp;
+                this.currentPair = this.getRandomPair();
+                this.correctAnswer = this.calculateAnswer();
+                this.gameStarted = true;
+                startScreen.style.display = 'none';
+                answerInput.style.display = 'block';
+                statsDiv.style.display = 'block';
+                feedbackDiv.style.display = 'block';
+                feedbackDiv.textContent = '';
+                this.userAnswer = '';
+                answerInput.value = '';
+                this.updateStats();
+            }
+
+            endGame() {
+                this.gameStarted = false;
+                answerInput.style.display = 'none';
+                endScreen.style.display = 'block';
+                statsDiv.style.display = 'none';
+                feedbackDiv.style.display = 'none';
+                finalScoreDiv.textContent = `Goed: ${this.correctCount} | Fout: ${this.wrongCount} | Score: ${this.correctCount}/${this.totalQuestions}`;
+            }
+
+            updateStats() {
+                statsDiv.textContent = `Goed: ${this.correctCount} | Fout: ${this.wrongCount} | Vragen: ${this.currentQuestion}/${this.totalQuestions}`;
+            }
+
+            drawRectangle() {
+                const partWidth = canvas.width / 7;
+                const partHeight = canvas.height / 3;
+
+                for (let y = 0; y < 3; y++) {
+                    for (let x = 0; x < 7; x++) {
+                        const cell = this.grid[y][x];
+                        ctx.fillStyle = cell.color;
+                        ctx.fillRect(x * partWidth, y * partHeight, partWidth, partHeight);
+
+                        ctx.fillStyle = 'black';
+                        ctx.font = cell.type === 'operator' ? '40px Arial' : '30px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(cell.value, x * partWidth + partWidth / 2, y * partHeight + partHeight / 2);
+
+                        const isHighlighted = this.currentPair && this.currentPair.some(pos => pos[0] === x && pos[1] === y);
+                        if (isHighlighted) {
+                            ctx.beginPath();
+                            ctx.arc(x * partWidth + partWidth / 2, y * partHeight + partHeight / 2, 40, 0, Math.PI * 2);
+                            ctx.strokeStyle = this.wrongFlashTimer > 0 && this.wrongFlashTimer % 20 < 10 ? 'red' : 'black';
+                            ctx.lineWidth = 3;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (this.gameStarted) {
+                    this.drawRectangle();
+                    if (this.feedbackTimer > 0) {
+                        this.feedbackTimer--;
+                        if (this.wrongFlashTimer > 0) this.wrongFlashTimer--;
+                    } else {
+                        feedbackDiv.textContent = '';
+                        if (this.currentQuestion >= this.totalQuestions) {
+                            this.endGame();
+                        }
+                    }
+                }
+            }
+        }
+
+        const game = new RectangleMathGame();
+
+        answerInput.addEventListener('input', (e) => {
+            game.userAnswer = e.target.value;
+        });
+
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && game.gameStarted) {
+                game.checkAnswer();
+            }
+        });
+
+        function startGame() {
+            const questionCount = parseInt(questionCountInput.value) || 10;
+            game.startGame(questionCount);
+        }
+
+        function restartGame() {
+            endScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+            answerInput.style.display = 'none';
+            feedbackDiv.textContent = '';
+            game.gameStarted = false;
+        }
+
+        function gameLoop() {
+            game.draw();
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
+
