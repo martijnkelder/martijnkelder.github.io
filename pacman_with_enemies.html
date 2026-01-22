@@ -100,8 +100,12 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         
-        const gridSize = canvas.width / 10; // Dynamic grid size based on canvas width
         const tileCount = 10; // Keep tile count constant at 10x10
+        
+        // Function to get current grid size based on canvas width
+        function getGridSize() {
+            return canvas.width / tileCount;
+        }
 
         let pacman;
         let ghosts;
@@ -228,7 +232,7 @@
                 return;
             }
 
-            const gridSize = canvas.width / tileCount; // Calculate dynamic grid size
+            const gridSize = getGridSize(); // Get current grid size
 
             // Clear canvas
             ctx.fillStyle = 'black';
