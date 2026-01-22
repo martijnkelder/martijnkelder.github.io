@@ -9,6 +9,8 @@
             border: 1px solid black;
             display: block;
             margin: 0 auto;
+            max-width: 100%;
+            height: auto;
         }
         #game-container {
             text-align: center;
@@ -63,7 +65,7 @@
     <div id="game-container">
         <div id="question"></div>
         <div id="score">Score: 0</div>
-        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div id="feedback"></div>
         <div id="pacmanCoordinates">-</div>
         <div id="ghostsCoordinates">-</div>
@@ -87,8 +89,19 @@
         const scoreElement = document.getElementById('score');
         const feedbackDiv = document.getElementById('feedback');
         const ctx = canvas.getContext('2d');
-        const gridSize = 60;
-        const tileCount = canvas.width / gridSize;
+        
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const containerWidth = Math.min(window.innerWidth - 40, 600);
+            canvas.width = containerWidth;
+            canvas.height = containerWidth; // Keep it square
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        const gridSize = canvas.width / 10; // Dynamic grid size based on canvas width
+        const tileCount = 10; // Keep tile count constant at 10x10
 
         let pacman;
         let ghosts;
@@ -214,6 +227,8 @@
                 feedbackDiv.textContent = '';
                 return;
             }
+
+            const gridSize = canvas.width / tileCount; // Calculate dynamic grid size
 
             // Clear canvas
             ctx.fillStyle = 'black';
