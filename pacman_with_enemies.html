@@ -369,14 +369,12 @@
               return
             };
 
-            wrongAnswer = false;
             switch (e.key) {
-                case 'ArrowUp': pacman.dy = -1; break;
-                case 'ArrowDown': pacman.dy = 1; break;
-                case 'ArrowLeft': pacman.dx = -1; break;
-                case 'ArrowRight': pacman.dx = 1; break;
+                case 'ArrowUp': handleMove('up'); break;
+                case 'ArrowDown': handleMove('down'); break;
+                case 'ArrowLeft': handleMove('left'); break;
+                case 'ArrowRight': handleMove('right'); break;
             }
-            update();
         });
 
         // Touch controls for mobile
