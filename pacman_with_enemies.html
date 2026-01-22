@@ -21,6 +21,42 @@
         #score {
             font-size: 20px;
         }
+        #controls {
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        .control-row {
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+        .control-button {
+            width: 80px;
+            height: 80px;
+            font-size: 32px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .control-button:active {
+            background-color: #45a049;
+            transform: scale(0.95);
+        }
+        .control-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        @media (min-width: 768px) {
+            #controls {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -31,6 +67,16 @@
         <div id="feedback"></div>
         <div id="pacmanCoordinates">-</div>
         <div id="ghostsCoordinates">-</div>
+        <div id="controls">
+            <div class="control-row">
+                <button class="control-button" id="btnUp">↑</button>
+            </div>
+            <div class="control-row">
+                <button class="control-button" id="btnLeft">←</button>
+                <button class="control-button" id="btnDown">↓</button>
+                <button class="control-button" id="btnRight">→</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -301,6 +347,19 @@
             }
         }
 
+        function handleMove(direction) {
+            if (gameOver) return;
+            
+            wrongAnswer = false;
+            switch (direction) {
+                case 'up': pacman.dy = -1; break;
+                case 'down': pacman.dy = 1; break;
+                case 'left': pacman.dx = -1; break;
+                case 'right': pacman.dx = 1; break;
+            }
+            update();
+        }
+
         document.addEventListener('keydown', (e) => {
             if (gameOver) {
               if (e.key === 'Enter') {
@@ -319,6 +378,12 @@
             }
             update();
         });
+
+        // Touch controls for mobile
+        document.getElementById('btnUp').addEventListener('click', () => handleMove('up'));
+        document.getElementById('btnDown').addEventListener('click', () => handleMove('down'));
+        document.getElementById('btnLeft').addEventListener('click', () => handleMove('left'));
+        document.getElementById('btnRight').addEventListener('click', () => handleMove('right'));
 
         // Game loop for ghost movement
         setInterval(() => {

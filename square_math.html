@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Rectangle Math Game - Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         #game-container {
             text-align: center;
@@ -23,6 +24,29 @@
             display: block;
             width: 200px; /* Fixed width for centering */
             transition: transform 0.1s;
+        }
+        #submitButton {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 10px auto;
+            display: none;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        #submitButton:active {
+            background-color: #45a049;
+            transform: scale(0.95);
+        }
+        @media (max-width: 768px) {
+            #submitButton {
+                display: block;
+            }
         }
         .shake {
             animation: shake 0.5s;
@@ -54,6 +78,7 @@
         <canvas id="gameCanvas" width="700" height="300"></canvas>
         <div id="feedback"></div>
         <input type="text" id="answerInput" placeholder="Geef hier je antwoord" style="display: none; width: 20ch; padding: 5px;">
+        <button id="submitButton" onclick="submitAnswer()">Bevestig</button>
         <div id="startScreen">
             <h2>Hoeveel vragen?</h2>
             <input type="number" id="questionCountInput" min="1" value="10">
@@ -277,6 +302,12 @@
                 game.checkAnswer();
             }
         });
+
+        function submitAnswer() {
+            if (game.gameStarted) {
+                game.checkAnswer();
+            }
+        }
 
         function startGame() {
             const questionCount = parseInt(questionCountInput.value) || 10;
