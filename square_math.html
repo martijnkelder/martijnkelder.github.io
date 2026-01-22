@@ -13,6 +13,8 @@
             border: none;
             display: block;
             margin: 0 auto;
+            max-width: 100%;
+            height: auto;
         }
         #stats, #feedback {
             font-size: 24px;
@@ -75,7 +77,7 @@
 <body>
     <div id="game-container">
         <div id="stats">Goed: 0 | Fout: 0 | Vragen: 0/0</div>
-        <canvas id="gameCanvas" width="700" height="300"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div id="feedback"></div>
         <input type="text" id="answerInput" placeholder="Geef hier je antwoord" style="display: none; width: 20ch; padding: 5px;">
         <button id="submitButton" onclick="submitAnswer()">Bevestig</button>
@@ -101,6 +103,17 @@
         const endScreen = document.getElementById('endScreen');
         const questionCountInput = document.getElementById('questionCountInput');
         const finalScoreDiv = document.getElementById('finalScore');
+
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const containerWidth = Math.min(window.innerWidth - 40, 700);
+            const aspectRatio = 300 / 700; // height / width
+            canvas.width = containerWidth;
+            canvas.height = containerWidth * aspectRatio;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         class RectangleMathGame {
             constructor() {
