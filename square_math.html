@@ -278,7 +278,8 @@
                         const isHighlighted = this.currentPair && this.currentPair.some(pos => pos[0] === x && pos[1] === y);
                         if (isHighlighted) {
                             ctx.beginPath();
-                            ctx.arc(x * partWidth + partWidth / 2, y * partHeight + partHeight / 2, 40, 0, Math.PI * 2);
+                            const radius = Math.min(partWidth, partHeight) * 0.4;
+                            ctx.arc(x * partWidth + partWidth / 2, y * partHeight + partHeight / 2, radius, 0, Math.PI * 2);
                             ctx.strokeStyle = this.wrongFlashTimer > 0 && this.wrongFlashTimer % 20 < 10 ? 'red' : 'black';
                             ctx.lineWidth = 3;
                             ctx.stroke();
